@@ -8,7 +8,7 @@ module Bundler
     class Git < Path
       autoload :GitProxy, "bundler/source/git/git_proxy"
 
-      attr_reader :uri, :ref, :branch, :options, :submodules
+      attr_reader :uri, :ref, :ref_alt, :branch, :options, :submodules
 
       def initialize(options)
         @options = options
@@ -18,11 +18,12 @@ module Bundler
         @allow_remote = false
 
         # Stringify options that could be set as symbols
-        %w(ref branch tag revision).each {|k| options[k] = options[k].to_s if options[k] }
+        %w(ref ref_alt branch branch_alt tag revision).each {|k| options[k] = options[k].to_s if options[k] }
 
         @uri        = options["uri"] || ""
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"] || "master"
+        @ref_alt    = options["ref_alt"] || options["branch_alt"]
         @submodules = options["submodules"]
         @name       = options["name"]
         @version    = options["version"].to_s.strip.gsub("-", ".pre.")
@@ -39,7 +40,7 @@ module Bundler
         out = String.new("GIT\n")
         out << "  remote: #{@uri}\n"
         out << "  revision: #{revision}\n"
-        %w(ref branch tag submodules).each do |opt|
+        %w(ref ref_alt branch branch_alt tag submodules).each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
         out << "  glob: #{@glob}\n" unless @glob == DEFAULT_GLOB
@@ -286,7 +287,7 @@ module Bundler
       end
 
       def git_proxy
-        @git_proxy ||= GitProxy.new(cache_path, uri, ref, cached_revision, self)
+        @git_proxy ||= GitProxy.new(cache_path, uri, ref, cached_revision, self, ref_alt)
       end
 
       def fetch

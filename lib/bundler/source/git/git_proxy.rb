@@ -46,10 +46,11 @@ module Bundler
         attr_accessor :path, :uri, :ref
         attr_writer :revision
 
-        def initialize(path, uri, ref, revision = nil, git = nil)
+        def initialize(path, uri, ref, revision = nil, git = nil, ref_alt = nil)
           @path     = path
           @uri      = uri
           @ref      = ref
+          @ref_alt  = ref_alt
           @revision = revision
           @git      = git
           raise GitNotInstalledError.new if allow? && !Bundler.git_present?
@@ -61,7 +62,13 @@ module Bundler
           begin
             @revision ||= find_local_revision
           rescue GitCommandError
-            raise MissingGitRevisionError.new(ref, uri)
+            if @ref_alt
+              @ref = @ref_alt
+              @ref_alt = nil
+              revision
+            else
+              raise MissingGitRevisionError.new(ref, uri)
+            end
           end
 
           @revision
